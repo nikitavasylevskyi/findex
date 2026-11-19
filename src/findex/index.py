@@ -1,20 +1,14 @@
-"""Inverted index: term -> postings sorted by doc_id.
-
-    python -m findex.index data/ --out index.bin [--format pickle|binary] [--positions]
-"""
+"""Inverted index: term -> postings sorted by doc_id."""
 
 from __future__ import annotations
 
-import argparse
-import time
-import tracemalloc
 from collections import defaultdict
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
-from findex.corpus import iter_documents
+from findex.corpus import Document, iter_documents
 from findex.timing import timed
 from findex.tokenize import tokenize
 
@@ -47,7 +41,6 @@ class Index(Mapping[str, list[Posting]]):
         self.docs = docs
         self.with_positions = with_positions
 
-    # --- Mapping protocol -------------------------------------------------
     def __getitem__(self, term: str) -> list[Posting]:
         return self._postings[term]
 
@@ -61,10 +54,16 @@ class Index(Mapping[str, list[Posting]]):
         return term in self._postings
 
     def __repr__(self) -> str:
-        return (f"Index(terms={len(self)}, docs={self.num_docs}, "
-                f"positions={self.with_positions})")
+        return f"Index(terms={len(self)}, docs={self.num_docs}, positions={self.with_positions})"
 
-    # --- statistics -------------------------------------------------------
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Index):
+            return NotImplemented
+        return (self._postings == other._postings and self.docs == other.docs
+                and self.with_positions == other.with_positions)
+
+    __hash__ = None  # type: ignore[assignment]  # a mutable container is unhashable, like dict
+
     @property
     def num_docs(self) -> int:
         return len(self.docs)
@@ -86,19 +85,10 @@ class Index(Mapping[str, list[Posting]]):
         self.docs = []
         self.__dict__.pop("avg_doc_length", None)
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Index):
-            return NotImplemented
-        return (self._postings == other._postings and self.docs == other.docs
-                and self.with_positions == other.with_positions)
-
-    __hash__ = None  # type: ignore[assignment]  # mutable container, like dict
-
-
-
 
 @timed
-def build_index(root: str | Path, positions: bool = False) -> Index:
+def build_index(root: str | Path, positions: bool = False,
+                on_document: Callable[[Document], None] | None = None) -> Index:
     """One pass over the lazy pipeline of lab 1.
 
     Documents arrive in increasing doc_id order, so appending keeps every
@@ -115,32 +105,6 @@ def build_index(root: str | Path, positions: bool = False) -> Index:
         for term, plist in term_pos.items():
             postings[term].append(Posting(doc.doc_id, len(plist), tuple(plist) if positions else ()))
         docs.append(DocMeta(doc.doc_id, str(doc.path), doc.title, length))
+        if on_document is not None:
+            on_document(doc)
     return Index(dict(postings), docs, positions)
-
-
-def main(argv: list[str] | None = None) -> int:
-    from findex import storage
-
-    parser = argparse.ArgumentParser(prog="python -m findex.index")
-    parser.add_argument("root", type=Path)
-    parser.add_argument("--out", type=Path, default=Path("index.bin"))
-    parser.add_argument("--format", choices=["pickle", "binary"], default="binary")
-    parser.add_argument("--positions", action="store_true", help="store token positions")
-    args = parser.parse_args(argv)
-
-    tracemalloc.start()
-    t0 = time.perf_counter()
-    index = build_index(args.root, positions=args.positions)
-    t1 = time.perf_counter()
-    storage.save(index, args.out, args.format)
-    t2 = time.perf_counter()
-    _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-    print(f"documents: {index.num_docs}, terms: {len(index)}")
-    print(f"build: {t1 - t0:.2f} s, save ({args.format}): {t2 - t1:.2f} s, "
-          f"file: {args.out.stat().st_size / 2**20:.1f} MiB, peak memory: {peak / 2**20:.1f} MiB")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

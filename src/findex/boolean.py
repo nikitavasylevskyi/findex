@@ -36,7 +36,7 @@ def intersect(a: list[int], b: list[int]) -> list[int]:
                 out.append(x)
         return out
     i = j = 0
-    out = []
+    out = []  # same name as in the branch above, already typed list[int]
     while i < len(a) and j < len(b):
         if a[i] == b[j]:
             out.append(a[i])
@@ -131,7 +131,7 @@ def _search_set(index: Index, query: str) -> list[int]:
     result: set[int] = set()
     for group in parse(query):
         positive = [set(doc_ids(index, w)) for neg, w in group if not neg]
-        acc = set.intersection(*positive) if positive else set(range(index.num_docs))
+        acc: set[int] = positive[0].intersection(*positive[1:]) if positive else set(range(index.num_docs))
         for neg, w in group:
             if neg:
                 acc -= set(doc_ids(index, w))

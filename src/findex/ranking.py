@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import heapq
+import logging
 import math
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 
 from findex.index import Index, Posting
 from findex.query import Node, parse
 from findex.timing import timed
 from findex.tokenize import normalize
+
+log = logging.getLogger("findex.search")
+ScorerName = Literal["bm25", "tfidf"]
 
 
 class Scorer(Protocol):
@@ -54,7 +58,7 @@ class BM25:
         return f"BM25(k1={self.k1}, b={self.b})"
 
 
-SCORERS: dict[str, Scorer] = {"tfidf": TfIdf(), "bm25": BM25()}
+SCORERS: dict[ScorerName, Scorer] = {"tfidf": TfIdf(), "bm25": BM25()}
 
 
 @dataclass(frozen=True, order=True)
@@ -84,8 +88,7 @@ class Searcher:
         hits_before = self.matching.cache_info().hits
         doc_ids, terms = self.matching(query)
         if self.matching.cache_info().hits > hits_before:
-            import sys
-            print(f"[cache] hit for {query!r}", file=sys.stderr)
+            log.debug("cache hit for %r", query)
         candidates = set(doc_ids)
         scores: defaultdict[int, float] = defaultdict(float)
         for term in terms:
@@ -97,7 +100,7 @@ class Searcher:
         for doc_id in candidates:  # e.g. "NOT x" alone: matching, but no positive terms
             scores.setdefault(doc_id, 0.0)
         top = heapq.nlargest(k, scores.items(), key=lambda item: (item[1], -item[0]))
-        results = []
+        results: list[SearchResult] = []
         for doc_id, score in top:
             meta = self.index.docs[doc_id]
             snip = make_snippet(meta.path, terms) if snippets else ""
@@ -135,7 +138,8 @@ def make_snippet(path: str, terms: tuple[str, ...], radius: int = 80,
         lo -= 1
     while hi < len(text) and text[hi].isalnum():
         hi += 1
-    out, last = [], lo
+    out: list[str] = []
+    last = lo
     for s, e, _ in hits:
         if lo <= s and e <= hi:
             out.append(text[last:s])

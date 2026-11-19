@@ -1,44 +1,27 @@
-import unittest
+import pytest
 
 from findex.tokenize import tokenize
 
 
-def toks(text):
-    return list(tokenize(text))
+@pytest.mark.parametrize(("text", "expected"), [
+    ("Hello World", ["hello", "world"]),
+    ("FILE ﬁle Ｐｙｔｈｏｎ", ["file", "file", "python"]),          # NFKC: ligature, full-width
+    ("Straße", ["strasse"]),                                        # casefold, not lower
+    ("Ǆ", ["dž"]),                                                  # NFKC splits the digraph, casefold lowers it
+    ("café café", ["café", "café"]),                          # composed and decomposed é
+    ("don't Python’s", ["dont", "pythons"]),                        # ASCII and typographic apostrophe
+    ("'quoted' word", ["quoted", "word"]),                          # quotes are not apostrophes
+    ("read-only", ["read", "only"]),
+    ("PEP 572, Python 3.13", ["pep", "572", "python", "3", "13"]),
+    ("__init__ sys_path", ["init", "sys_path"]),
+    ("Привіт, світе! Слово’є", ["привіт", "світе", "словоє"]),
+    ("  ... --- ", []),
+    ("", []),
+])
+def test_tokenize(text: str, expected: list[str]) -> None:
+    assert list(tokenize(text)) == expected
 
 
-class TokenizeTest(unittest.TestCase):
-    def test_lowercase_and_nfkc(self):
-        self.assertEqual(toks("FILE ﬁle Ｐｙｔｈｏｎ"), ["file", "file", "python"])
-
-    def test_casefold(self):
-        self.assertEqual(toks("Straße"), ["strasse"])
-
-    def test_apostrophes(self):
-        self.assertEqual(toks("don't Python’s"), ["dont", "pythons"])
-
-    def test_quotes_are_not_apostrophes(self):
-        self.assertEqual(toks("'quoted' word"), ["quoted", "word"])
-
-    def test_hyphen_splits(self):
-        self.assertEqual(toks("read-only"), ["read", "only"])
-
-    def test_numbers(self):
-        self.assertEqual(toks("PEP 572, Python 3.13"), ["pep", "572", "python", "3", "13"])
-
-    def test_underscore_identifiers(self):
-        self.assertEqual(toks("__init__ sys_path"), ["init", "sys_path"])
-
-    def test_other_scripts(self):
-        self.assertEqual(toks("Привіт, світе!"), ["привіт", "світе"])
-
-    def test_is_lazy(self):
-        gen = tokenize("a b c")
-        self.assertEqual(next(gen), "a")
-
-    def test_empty(self):
-        self.assertEqual(toks("  ... --- "), [])
-
-
-if __name__ == "__main__":
-    unittest.main()
+def test_tokenize_is_lazy() -> None:
+    gen = tokenize("a b c")
+    assert next(gen) == "a"

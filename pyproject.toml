@@ -1,14 +1,54 @@
 [project]
 name = "findex"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.4.0"
+description = "Full-text search over Python PEPs and documentation"
 readme = "README.md"
 authors = [
     { name = "Nikita Vasylevskyi", email = "nikitavasylevskyi@users.noreply.github.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "rich>=15.0.0",
+    "typer>=0.29.2",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.32,<0.12.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.16",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.6",
+]
+
+[project.scripts]
+findex = "findex.cli:app"
+
+[tool.pyright]
+include = ["src"]
+typeCheckingMode = "strict"
+pythonVersion = "3.13"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: takes longer than a second"]
+
+[tool.coverage.run]
+source = ["findex"]
+branch = true
+
+[tool.ruff.lint.per-file-ignores]
+# benchmark lambdas are called immediately inside the loop, so late binding is intended
+"scripts/*" = ["B023"]

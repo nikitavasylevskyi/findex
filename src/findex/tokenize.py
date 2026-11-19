@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 
 _APOSTROPHES = re.compile(r"(?<=\w)['’](?=\w)")
 _TOKEN = re.compile(r"[^\W_]+(?:_+[^\W_]+)*")

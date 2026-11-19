@@ -17,8 +17,8 @@ Nodes can be combined in Python as well: ``Term("a") & ~Term("b") | Phrase(("c",
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 from findex.boolean import difference, intersect, union
 from findex.index import Index
@@ -30,6 +30,8 @@ class QuerySyntaxError(ValueError):
 
 
 class Node:
+    """Base of all query nodes. Subclasses are frozen dataclasses, so trees compare by value."""
+
     def __and__(self, other: Node) -> Node:
         return And(self, other)
 
@@ -72,7 +74,7 @@ class Phrase(Node):
         for pl in plists[1:]:
             candidates = intersect(candidates, [p.doc_id for p in pl])
         by_doc = [{p.doc_id: p.positions for p in pl} for pl in plists]
-        result = []
+        result: list[int] = []
         for doc_id in candidates:
             starts = set(by_doc[0][doc_id])
             for offset, positions in enumerate(by_doc[1:], 1):
@@ -137,8 +139,15 @@ def lex(query: str) -> list[str]:
         m = _LEX.match(query, pos)
         if not m:
             raise QuerySyntaxError(f"unclosed quote at position {pos}")
-        lpar, rpar, phrase, word = m.groups()
-        tokens.append("(" if lpar else ")" if rpar else f'"{phrase}"' if phrase is not None else word)
+        lpar, rpar, phrase, word = m.group(1, 2, 3, 4)
+        if lpar:
+            tokens.append("(")
+        elif rpar:
+            tokens.append(")")
+        elif phrase is not None:
+            tokens.append(f'"{phrase}"')
+        else:
+            tokens.append(word)
         pos = m.end()
     return tokens
 

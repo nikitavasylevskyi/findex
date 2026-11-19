@@ -1,5 +1,7 @@
 # findex
 
+[![CI](https://github.com/nikitavasylevskyi/findex/actions/workflows/ci.yml/badge.svg)](https://github.com/nikitavasylevskyi/findex/actions/workflows/ci.yml)
+
 Невелика пошукова система на Python, яку я будую протягом семестру. Кожна лабораторна додає одну
 особливість мови і один крок проєкту.
 
@@ -230,3 +232,47 @@ BM25 виграє там, де TF-IDF тягне вгору довгі зага�
 у яких слово просто часто повторюється. Програє BM25 на запиті 1: слова `operator` і `expression` часті, і короткі PEP
 про інші оператори (`None`-coalescing, pattern matching) обходять довгий PEP 572. Запит 8 погано виходить в обох:
 `groups` збігається з «Dependency Groups» у PEP про пакування — без фразового пошуку (`"exception groups"`) це не розрізнити.
+
+## Лаба 4 — типи, тести, пакування і CLI
+
+```bash
+uv sync                                   # залежності + група dev з uv.lock
+uv tool install .                         # команда findex у PATH
+findex index data/ -o index.bin           # смуга прогресу rich
+findex search '"pattern matching" NOT tutorial' -k 3
+findex search walrus --json > results.json
+findex -v search walrus                   # -v: час кожного кроку, -vv: debug (кеш тощо)
+findex stats data/ --top 20
+```
+
+- **Типи.** Усе в `src/findex` анотоване; `pyright` у режимі `strict` — 0 помилок. `Scorer` — `typing.Protocol`:
+  `TfIdf` і `BM25` нічого не наслідують, pyright перевіряє, що їхні `score` збігаються з протоколом. Генератори
+  повертають `Iterator[...]`, рядкові параметри (`engine`, `scorer`, формат файлу) — `Literal`. Єдиний
+  `# type: ignore` стоїть у `Index.__hash__ = None` з поясненням: змінний контейнер не має бути хешованим, як `dict`,
+  а typeshed оголошує `__hash__` як метод.
+- **Тести** — `pytest`, 80 штук: токенізатор (`parametrize`, зокрема NFKC, `casefold`, апострофи, кирилиця),
+  збірка індексу на маленькому корпусі з `conftest.py`, merge-операції, парсер (порівняння дерев), обидва скорери і
+  три перевірки з лаби 3, save/load у двох форматах, CLI через `typer.testing.CliRunner`. Три властивості Hypothesis
+  (`tests/test_properties.py`): `load(save(index)) == index` на випадкових корпусах, постінги завжди відсортовані і
+  `tf` дорівнює числу входжень, `intersect`/`union`/`difference` збігаються з операціями над `set`.
+  Тест на справжньому корпусі триває понад секунду, позначений `@pytest.mark.slow` і пропускається, якщо `data/` немає.
+- **Покриття — 94 %** (рядки + гілки, `pytest --cov`). Навмисно поза тестами: `__main__.py` (два рядки виклику
+  `app`), `stats_greedy` (жадібна версія з лаби 1 — існує лише для порівняння пам'яті й запускається з
+  `findex stats --greedy`), гілки CLI для порожньої видачі та помилок `stats`.
+- **Пакування.** `pyproject.toml` описує метадані, залежності (`typer`, `rich`) і групу `dev`; `uv.lock` у
+  репозиторії. `[project.scripts] findex = "findex.cli:app"` — точка входу.
+- **CLI.** Команди `index`, `search`, `stats`. Результат — у stdout (`--json` — чистий JSON, його можна перенаправити),
+  уся діагностика — у stderr через `logging`; логер налаштовується один раз у `findex.cli.main`. Очікувана помилка
+  дає один рядок і код виходу 1:
+
+```text
+$ findex search "(walrus"
+error: missing ')'
+$ findex search x -i nope.bin
+error: index file not found: nope.bin
+```
+
+- **CI** (`.github/workflows/ci.yml`) на кожен push і PR: `uv sync --locked`, `ruff`, `pyright`, `pytest`.
+  `release.yml` ставить теги лаб і, коли у `pyproject.toml` з'являється нова версія, збирає wheel і публікує
+  GitHub Release. Wheel `findex-0.4.0-py3-none-any.whl` ставиться в чисте оточення (`python -m venv` +
+  `pip install`), після чого `findex --help` працює.

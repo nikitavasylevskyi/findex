@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 
 SUFFIXES = (".rst", ".txt", ".md")
 
@@ -44,6 +44,9 @@ def iter_paths(root: Path) -> Iterator[Path]:
 
 def iter_documents(root: str | Path) -> Iterator[Document]:
     """Yield documents one by one; only the current file is held in memory."""
-    for doc_id, path in enumerate(iter_paths(Path(root))):
+    root = Path(root)
+    if not root.is_dir():
+        raise FileNotFoundError(f"corpus directory not found: {root}")
+    for doc_id, path in enumerate(iter_paths(root)):
         text = path.read_text(encoding="utf-8", errors="replace")
         yield Document(doc_id, path, guess_title(path, text), text)

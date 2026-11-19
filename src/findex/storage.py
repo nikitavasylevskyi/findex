@@ -25,7 +25,7 @@ import pickle
 import struct
 from array import array
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from findex.index import DocMeta, Index, Posting
 from findex.timing import timed
@@ -33,6 +33,10 @@ from findex.timing import timed
 MAGIC = b"FIDX"
 VERSION = 1
 Format = Literal["pickle", "binary"]
+
+
+class IndexFormatError(ValueError):
+    pass
 
 
 @timed
@@ -43,7 +47,7 @@ def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
             pickle.dump(index, f, protocol=pickle.HIGHEST_PROTOCOL)
         return
     data = array("I")
-    terms: list[list[object]] = []
+    terms: list[tuple[str, int, int]] = []
     for term, plist in index.items():
         start = len(data)
         prev = 0
@@ -54,7 +58,7 @@ def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
         if index.with_positions:
             for p in plist:
                 data.extend(p.positions)
-        terms.append([term, len(plist), len(data) - start])
+        terms.append((term, len(plist), len(data) - start))
     header = json.dumps({
         "positions": index.with_positions,
         "docs": [[d.path, d.title, d.length] for d in index.docs],
@@ -69,27 +73,32 @@ def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
 @timed
 def load(path: str | Path, fmt: Format | None = None) -> Index:
     path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(f"index file not found: {path}")
     with path.open("rb") as f:
         magic = f.read(4)
         if fmt is None:
             fmt = "binary" if magic == MAGIC else "pickle"
         if fmt == "pickle":
             f.seek(0)
-            index = pickle.load(f)  # only for files we wrote ourselves, see module docstring
-            if not isinstance(index, Index):
-                raise ValueError(f"{path} does not contain an index")
-            return index
+            try:
+                obj: object = pickle.load(f)  # only for files we wrote ourselves, see module docstring
+            except Exception as e:
+                raise IndexFormatError(f"{path} is not a findex index ({e.__class__.__name__})") from e
+            if not isinstance(obj, Index):
+                raise IndexFormatError(f"{path} does not contain an index")
+            return obj
         if magic != MAGIC:
-            raise ValueError(f"{path} is not a findex binary index")
+            raise IndexFormatError(f"{path} is not a findex binary index")
         version, header_len = struct.unpack("<II", f.read(8))
         if version != VERSION:
-            raise ValueError(f"unsupported index version {version}")
-        header = json.loads(f.read(header_len).decode("utf-8"))
+            raise IndexFormatError(f"unsupported index version {version}")
+        header: dict[str, Any] = json.loads(f.read(header_len).decode("utf-8"))
         data = array("I")
         data.frombytes(f.read())
 
-    with_pos: bool = header["positions"]
-    docs = [DocMeta(i, p, t, n) for i, (p, t, n) in enumerate(header["docs"])]
+    with_pos = bool(header["positions"])
+    docs = [DocMeta(i, str(p), str(t), int(n)) for i, (p, t, n) in enumerate(header["docs"])]
     postings: dict[str, list[Posting]] = {}
     off = 0
     for term, df, size in header["terms"]:
@@ -98,13 +107,13 @@ def load(path: str | Path, fmt: Format | None = None) -> Index:
         doc_id = 0
         plist: list[Posting] = []
         pos_off = off + 2 * df
-        for gap, tf in zip(ids, tfs):
+        for gap, tf in zip(ids, tfs, strict=True):
             doc_id += gap
             if with_pos:
                 plist.append(Posting(doc_id, tf, tuple(data[pos_off:pos_off + tf])))
                 pos_off += tf
             else:
                 plist.append(Posting(doc_id, tf))
-        postings[term] = plist
-        off += size
+        postings[str(term)] = plist
+        off += int(size)
     return Index(postings, docs, with_pos)
