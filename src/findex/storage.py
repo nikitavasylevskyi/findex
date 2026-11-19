@@ -27,14 +27,16 @@ from array import array
 from pathlib import Path
 from typing import Literal
 
-from findex.index import DocMeta, InvertedIndex, Posting
+from findex.index import DocMeta, Index, Posting
+from findex.timing import timed
 
 MAGIC = b"FIDX"
 VERSION = 1
 Format = Literal["pickle", "binary"]
 
 
-def save(index: InvertedIndex, path: str | Path, fmt: Format = "binary") -> None:
+@timed
+def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
     path = Path(path)
     if fmt == "pickle":
         with path.open("wb") as f:
@@ -42,7 +44,7 @@ def save(index: InvertedIndex, path: str | Path, fmt: Format = "binary") -> None
         return
     data = array("I")
     terms: list[list[object]] = []
-    for term, plist in index.postings.items():
+    for term, plist in index.items():
         start = len(data)
         prev = 0
         for p in plist:
@@ -64,7 +66,8 @@ def save(index: InvertedIndex, path: str | Path, fmt: Format = "binary") -> None
         data.tofile(f)
 
 
-def load(path: str | Path, fmt: Format | None = None) -> InvertedIndex:
+@timed
+def load(path: str | Path, fmt: Format | None = None) -> Index:
     path = Path(path)
     with path.open("rb") as f:
         magic = f.read(4)
@@ -73,7 +76,7 @@ def load(path: str | Path, fmt: Format | None = None) -> InvertedIndex:
         if fmt == "pickle":
             f.seek(0)
             index = pickle.load(f)  # only for files we wrote ourselves, see module docstring
-            if not isinstance(index, InvertedIndex):
+            if not isinstance(index, Index):
                 raise ValueError(f"{path} does not contain an index")
             return index
         if magic != MAGIC:
@@ -104,4 +107,4 @@ def load(path: str | Path, fmt: Format | None = None) -> InvertedIndex:
                 plist.append(Posting(doc_id, tf))
         postings[term] = plist
         off += size
-    return InvertedIndex(postings, docs, with_pos)
+    return Index(postings, docs, with_pos)

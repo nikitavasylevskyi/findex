@@ -138,3 +138,95 @@ uv run python scripts/bench_lab2.py data/                           # усі т�
 тисячі ітерацій байт-коду Python. Зате `merge` не будує хеш-таблиць і віддає вже відсортований результат, а на
 сильно різних довжинах стрибки `bisect` обходять довгий список за log n — тут він швидший за `set`, якому все одно
 треба перегнати в множину всі 1301 id частого терміна.
+
+## Лаба 3 — рейтинг і модель об'єктів
+
+```bash
+uv run python -m findex.index data/ --out index.bin --positions
+uv run python -m findex.search index.bin 'python AND (async OR await) NOT java "event loop"' -k 5
+uv run python -m findex.search index.bin "walrus" "walrus" --scorer tfidf    # другий раз — з кешу
+uv run python scripts/eval_lab3.py index.bin                                  # перевірки і P@5
+```
+
+- `findex.index.Index` наслідує `collections.abc.Mapping`: `len(index)`, `"async" in index`, `index["async"]`,
+  ітерація по термах, `repr`. `num_docs`, `avg_doc_length` (`cached_property`), `df(term)`.
+- `findex.search.open_index(path)` — контекстний менеджер; у `finally` викликає `index.close()`, тож дані
+  звільняються і тоді, коли всередині `with` вилетів виняток (перевіряє `test_open_index_releases_on_error`).
+- `findex.ranking.Scorer` — `typing.Protocol` з `name` і `score(index, df, posting)`. `TfIdf` і `BM25(k1=1.5, b=0.75)`
+  його не наслідують, а просто мають такі методи. `Searcher.search` накопичує бали в `defaultdict(float)` і бере топ-k
+  через `heapq.nlargest`. Результат — `SearchResult` з `order=True`, порівнюється лише за балом.
+- `findex.query` — рекурсивний спуск, по функції на правило граматики. Вузли `Term`, `Phrase`, `And`, `Or`, `Not`
+  збираються і операторами `&`, `|`, `~`; `evaluate(index)` повертає відсортовані `doc_id` через merge з лаби 2.
+  `Phrase` перевіряє, що позиції слів ідуть підряд, тому потребує індексу з `--positions`.
+  Тести парсера порівнюють дерева: `parse("a AND NOT b OR c") == Term("a") & ~Term("b") | Term("c")`.
+- `@timed` (`functools.wraps`) стоїть на `build_index`, `save`, `load`, `Searcher.search`. `Searcher.matching` —
+  `lru_cache(maxsize=512)` на шлях «рядок запиту → id документів»:
+
+```text
+[timed] load: 1133.3 ms
+[timed] Searcher.search: 8.9 ms
+[cache] hit for 'walrus'
+[timed] Searcher.search: 8.2 ms
+```
+
+Кеш прибирає розбір запиту і merge, але більшу частину з 8 мс займає читання файлів для сніпетів, тому різниця невелика.
+
+- Сніпет — вікно ±80 символів навколо входження, у вікні якого найбільше різних слів запиту; слова запиту
+  позначені `**...**`, вікно не ріже слова навпіл.
+
+### Три перевірки рейтингу на корпусі
+
+**1. Рідкісний термін важить більше за частий.** Один і той самий документ (PEP 572), по одному входженню:
+
+| Термін | df | TF-IDF | BM25 |
+|---|---:|---:|---:|
+| `the` | 1301 | 0.01 | 0.00 |
+| `python` | 1208 | 0.08 | 0.05 |
+| `walrus` | 15 | 4.47 | 2.84 |
+
+`the` трапляється майже в кожному документі, тож idf ≈ 0 — за запитом `the OR walrus` весь топ складають документи
+про walrus.
+
+**2. Двадцяте повторення майже нічого не додає.** Термін `walrus` у документі середньої довжини:
+
+| tf | 1 | 2 | 3 | 5 | 10 | 19 | 20 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| BM25 | 4.44 | 6.34 | 7.39 | 8.53 | 9.65 | 10.28 | 10.32 |
+| TF-IDF | 4.47 | 7.57 | 9.38 | 11.66 | 14.76 | 17.63 | 17.86 |
+
+Перехід з 19 на 20 дає BM25 лише +0.04 (менше 0.4 %): `tf·(k1+1)/(tf+k1·…)` прямує до стелі `(k1+1)·idf`.
+У TF-IDF з логарифмом той самий крок дає +0.23 — росте повільно, але без межі.
+
+**3. Короткий документ з одним входженням вище за дуже довгий.**
+
+| Документ | Довжина, токенів | BM25 | TF-IDF |
+|---|---:|---:|---:|
+| Concrete Objects Layer | 291 | 7.47 | 4.47 |
+| tkinter — Python interface to Tcl/Tk | 37 461 | 0.72 | 4.47 |
+
+BM25 ділить на нормовану довжину документа (`b = 0.75`), тому одне згадування в короткому тексті важить у 10 разів більше.
+TF-IDF довжини не враховує і ставить їх нарівні.
+
+### Precision@5: TF-IDF проти BM25
+
+10 запитів, для кожного я вручну переглянув кандидатів і записав, які документи справді про це
+(`eval/queries.json`). P@5 — частка релевантних серед перших п'яти.
+
+| # | Запит | TF-IDF | BM25 |
+|---|---|---:|---:|
+| 1 | `walrus OR operator OR assignment OR expression` | 0.6 | 0.4 |
+| 2 | `structural OR pattern OR matching` | 1.0 | 1.0 |
+| 3 | `f-string OR formatting` | 0.6 | 1.0 |
+| 4 | `type OR hints OR generics` | 0.8 | 0.8 |
+| 5 | `asyncio OR event OR loop` | 1.0 | 1.0 |
+| 6 | `global OR interpreter OR lock OR free OR threading` | 0.4 | 0.6 |
+| 7 | `dataclasses` | 0.6 | 0.6 |
+| 8 | `exception OR groups` | 0.4 | 0.4 |
+| 9 | `unicode OR normalization` | 0.8 | 1.0 |
+| 10 | `garbage OR collection OR reference OR counting` | 0.8 | 1.0 |
+| | **середнє** | **0.70** | **0.78** |
+
+BM25 виграє там, де TF-IDF тягне вгору довгі загальні сторінки («Built-in Types», «What's New», «Logging Cookbook»),
+у яких слово просто часто повторюється. Програє BM25 на запиті 1: слова `operator` і `expression` часті, і короткі PEP
+про інші оператори (`None`-coalescing, pattern matching) обходять довгий PEP 572. Запит 8 погано виходить в обох:
+`groups` збігається з «Dependency Groups» у PEP про пакування — без фразового пошуку (`"exception groups"`) це не розрізнити.

@@ -14,7 +14,7 @@ from __future__ import annotations
 from bisect import bisect_left
 from typing import Literal
 
-from findex.index import InvertedIndex
+from findex.index import Index
 from findex.tokenize import tokenize
 
 Engine = Literal["merge", "set"]
@@ -83,13 +83,13 @@ def difference(a: list[int], b: list[int]) -> list[int]:
     return out
 
 
-def doc_ids(index: InvertedIndex, word: str) -> list[int]:
+def doc_ids(index: Index, word: str) -> list[int]:
     toks = list(tokenize(word))
     if not toks:
         return []
-    result = [p.doc_id for p in index.postings.get(toks[0], [])]
+    result = [p.doc_id for p in index.get(toks[0], [])]
     for t in toks[1:]:  # "read-only" as one query word means read AND only
-        result = intersect(result, [p.doc_id for p in index.postings.get(t, [])])
+        result = intersect(result, [p.doc_id for p in index.get(t, [])])
     return result
 
 
@@ -108,7 +108,7 @@ def parse(query: str) -> list[list[tuple[bool, str]]]:
     return [g for g in groups if g]
 
 
-def search(index: InvertedIndex, query: str, engine: Engine = "merge") -> list[int]:
+def search(index: Index, query: str, engine: Engine = "merge") -> list[int]:
     if engine == "set":
         return _search_set(index, query)
     result: list[int] = []
@@ -127,7 +127,7 @@ def search(index: InvertedIndex, query: str, engine: Engine = "merge") -> list[i
     return result
 
 
-def _search_set(index: InvertedIndex, query: str) -> list[int]:
+def _search_set(index: Index, query: str) -> list[int]:
     result: set[int] = set()
     for group in parse(query):
         positive = [set(doc_ids(index, w)) for neg, w in group if not neg]
