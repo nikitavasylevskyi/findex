@@ -37,10 +37,26 @@ def peak_rss_mib() -> float:
     """Peak resident set size of this process (the parent; workers are not counted)."""
     try:
         import resource
-    except ImportError:  # Windows
-        import psutil
+    except ImportError:  # Windows: GetProcessMemoryInfo through ctypes, no third-party package needed
+        import ctypes
+        from ctypes import wintypes
 
-        return psutil.Process().memory_info().peak_wset / 2**20  # type: ignore[attr-defined]
+        class Counters(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                        ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        c = Counters()
+        c.cb = ctypes.sizeof(c)
+        kernel32 = ctypes.WinDLL("kernel32")
+        psapi = ctypes.WinDLL("psapi")
+        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        if not psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(c), c.cb):
+            raise OSError("GetProcessMemoryInfo failed") from None
+        return c.PeakWorkingSetSize / 2**20
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
 
@@ -69,9 +85,11 @@ def run(args: argparse.Namespace) -> None:
         for w in [1] if executor == "serial" else workers:
             runs: list[dict[str, float]] = []
             for _ in range(args.repeat):
-                out = subprocess.run([sys.executable, __file__, "--one", args.corpus, executor, str(w)],
-                                     check=True, capture_output=True, text=True).stdout
-                runs.append(json.loads(out))
+                proc = subprocess.run([sys.executable, __file__, "--one", args.corpus, executor, str(w)],
+                                      capture_output=True, text=True)
+                if proc.returncode != 0:
+                    sys.exit(f"{executor} x{w} failed:\n{proc.stderr}")
+                runs.append(json.loads(proc.stdout))
             row: dict[str, object] = {"executor": executor, "workers": w}
             row |= {k: statistics.median(r[k] for r in runs) for k in runs[0]}
             rows.append(row)

@@ -1,0 +1,48 @@
+{
+  "python": "3.13.18",
+  "gil": false,
+  "cpu": "AMD Ryzen 7 7800X3D 8-Core Processor",
+  "cpus": 8,
+  "rows": [
+    {
+      "executor": "serial",
+      "workers": 1,
+      "wall": 3.24493689998053,
+      "cpu": 3.1875,
+      "rss_mib": 86.91796875,
+      "merge": 1.100008375942707e-06
+    },
+    {
+      "executor": "threads",
+      "workers": 1,
+      "wall": 3.351467500004219,
+      "cpu": 3.28125,
+      "rss_mib": 131.67578125,
+      "merge": 0.07315320000634529
+    },
+    {
+      "executor": "threads",
+      "workers": 2,
+      "wall": 1.9490319000033196,
+      "cpu": 3.4375,
+      "rss_mib": 150.94921875,
+      "merge": 0.10296779999043792
+    },
+    {
+      "executor": "threads",
+      "workers": 4,
+      "wall": 1.2045654999965336,
+      "cpu": 3.65625,
+      "rss_mib": 184.296875,
+      "merge": 0.1397148000251036
+    },
+    {
+      "executor": "threads",
+      "workers": 8,
+      "wall": 0.9435991999926046,
+      "cpu": 4.171875,
+      "rss_mib": 225.6484375,
+      "merge": 0.1877653000119608
+    }
+  ]
+}

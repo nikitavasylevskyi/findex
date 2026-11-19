@@ -1,0 +1,80 @@
+{
+  "python": "3.13.18",
+  "gil": true,
+  "cpu": "AMD Ryzen 7 7800X3D 8-Core Processor",
+  "cpus": 8,
+  "rows": [
+    {
+      "executor": "serial",
+      "workers": 1,
+      "wall": 2.889029700018,
+      "cpu": 2.828125,
+      "rss_mib": 81.0546875,
+      "merge": 1.7999846022576094e-06
+    },
+    {
+      "executor": "threads",
+      "workers": 1,
+      "wall": 2.941053099988494,
+      "cpu": 2.890625,
+      "rss_mib": 114.5546875,
+      "merge": 0.0476228000188712
+    },
+    {
+      "executor": "threads",
+      "workers": 2,
+      "wall": 3.0676531000062823,
+      "cpu": 3.03125,
+      "rss_mib": 129.52734375,
+      "merge": 0.06681349998689257
+    },
+    {
+      "executor": "threads",
+      "workers": 4,
+      "wall": 3.192241099983221,
+      "cpu": 3.296875,
+      "rss_mib": 148.8671875,
+      "merge": 0.09768649999750778
+    },
+    {
+      "executor": "threads",
+      "workers": 8,
+      "wall": 3.3553590000083204,
+      "cpu": 3.46875,
+      "rss_mib": 172.62109375,
+      "merge": 0.12558100000023842
+    },
+    {
+      "executor": "processes",
+      "workers": 1,
+      "wall": 3.5363436000188813,
+      "cpu": 3.046875,
+      "rss_mib": 129.64453125,
+      "merge": 0.04562630000873469
+    },
+    {
+      "executor": "processes",
+      "workers": 2,
+      "wall": 2.128368700010469,
+      "cpu": 3.21875,
+      "rss_mib": 139.12890625,
+      "merge": 0.06874670000979677
+    },
+    {
+      "executor": "processes",
+      "workers": 4,
+      "wall": 1.259537400008412,
+      "cpu": 3.28125,
+      "rss_mib": 156.14453125,
+      "merge": 0.09386579997953959
+    },
+    {
+      "executor": "processes",
+      "workers": 8,
+      "wall": 1.0340439999999944,
+      "cpu": 3.5625,
+      "rss_mib": 178.94140625,
+      "merge": 0.13227800000458956
+    }
+  ]
+}
