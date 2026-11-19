@@ -1,0 +1,43 @@
+{
+  "url": "http://127.0.0.1:8765/",
+  "pages": 200,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+  "rows": [
+    {
+      "concurrency": 1,
+      "per_host": 1,
+      "wall": 33.04831857199997,
+      "pages": 200,
+      "rate": 6.051745100564633,
+      "errors": 3,
+      "rss_mib": 43.6875
+    },
+    {
+      "concurrency": 5,
+      "per_host": 5,
+      "wall": 4.962914762999958,
+      "pages": 200,
+      "rate": 40.298898842885826,
+      "errors": 2,
+      "rss_mib": 43.87109375
+    },
+    {
+      "concurrency": 20,
+      "per_host": 20,
+      "wall": 1.2027560469999798,
+      "pages": 200,
+      "rate": 166.28475948955537,
+      "errors": 2,
+      "rss_mib": 44.63671875
+    },
+    {
+      "concurrency": 20,
+      "per_host": 4,
+      "wall": 6.171192990000009,
+      "pages": 200,
+      "rate": 32.40864453989467,
+      "errors": 3,
+      "rss_mib": 43.83203125
+    }
+  ]
+}

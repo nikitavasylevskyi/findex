@@ -17,7 +17,8 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, T
 from rich.table import Table
 
 from findex import __version__, boolean, storage
-from findex.corpus import iter_paths
+from findex.corpus import display_path, is_jsonl, iter_paths
+from findex.index import build_index
 from findex.parallel import ExecutorKind, build_parallel
 from findex.query import QuerySyntaxError
 from findex.ranking import SCORERS, Searcher
@@ -66,7 +67,7 @@ def main(
 
 @app.command("index")
 def index_cmd(
-    corpus: Annotated[Path, typer.Argument(help="Directory with documents")],
+    corpus: Annotated[Path, typer.Argument(help="Directory with documents or a .jsonl file from findex crawl")],
     out_path: Annotated[Path, typer.Option("--out", "-o", help="Where to write the index")] = Path("index.bin"),
     fmt: Annotated[Fmt, typer.Option("--format")] = "binary",
     positions: Annotated[bool, typer.Option("--positions/--no-positions",
@@ -74,19 +75,50 @@ def index_cmd(
     workers: Annotated[int, typer.Option("--workers", "-w", min=1, help="Parallel workers")] = os.cpu_count() or 1,
     executor: Annotated[ExecutorKind, typer.Option("--executor", "-e")] = "processes",
 ) -> None:
-    """Build an index from a directory of documents."""
-    if not corpus.is_dir():
+    """Build an index from a directory of documents or from crawled pages."""
+    jsonl = corpus.is_file() and is_jsonl(corpus)
+    if not corpus.is_dir() and not jsonl:
         raise fail(f"corpus directory not found: {corpus}")
-    total = sum(1 for _ in iter_paths(corpus))
     t0 = time.perf_counter()
     with Progress(TextColumn("[bold]indexing"), BarColumn(), MofNCompleteColumn(), TimeElapsedColumn(),
                   console=err, transient=True) as progress:
-        task = progress.add_task("index", total=total)
-        index, _ = build_parallel(corpus, workers, executor, positions,
-                                  on_chunk=lambda n: progress.advance(task, n))
+        if jsonl:  # one file read line by line: a single process, no chunks to hand out
+            task = progress.add_task("index", total=None)
+            index = build_index(corpus, positions, on_document=lambda _: progress.advance(task))
+        else:
+            task = progress.add_task("index", total=sum(1 for _ in iter_paths(corpus)))
+            index, _ = build_parallel(corpus, workers, executor, positions,
+                                      on_chunk=lambda n: progress.advance(task, n))
     storage.save(index, out_path, fmt)
     err.print(f"{index.num_docs} documents, {len(index)} terms -> {out_path} "
               f"({out_path.stat().st_size / 2**20:.1f} MiB) in {time.perf_counter() - t0:.1f} s")
+
+
+@app.command("crawl")
+def crawl_cmd(
+    seed: Annotated[str, typer.Argument(help="Start URL; only its host is crawled")],
+    out_path: Annotated[Path, typer.Option("--out", "-o", help="JSONL file with pages")] = Path("crawl.jsonl"),
+    max_pages: Annotated[int, typer.Option("--max-pages", "-n", min=1)] = 200,
+    concurrency: Annotated[int, typer.Option("--concurrency", "-c", min=1, help="Requests at once")] = 10,
+    per_host: Annotated[int, typer.Option("--per-host", min=1, help="Requests at once to one host")] = 4,
+    delay: Annotated[float, typer.Option("--delay", min=0, help="Seconds between requests to one host")] = 0.0,
+    timeout: Annotated[float, typer.Option("--timeout", min=0.1, help="Seconds per request")] = 10.0,
+    log_path: Annotated[Path, typer.Option("--log", help="Status of every URL")] = Path("crawl.log"),
+) -> None:
+    """Crawl a site politely and write its pages as JSONL (then: findex index crawl.jsonl)."""
+    import asyncio
+
+    from findex.crawl.run import run_crawl
+
+    debug = logging.getLogger().getEffectiveLevel() <= logging.DEBUG
+    try:
+        stats = asyncio.run(run_crawl(seed, out_path, max_pages=max_pages, concurrency=concurrency,
+                                      per_host=per_host, delay=delay, timeout=timeout, log_path=log_path,
+                                      console=err, debug=debug), debug=debug)
+    except ValueError as e:
+        raise fail(str(e)) from None
+    err.print(f"{stats.pages} pages, {stats.errors} errors in {stats.elapsed:.1f} s "
+              f"({stats.rate:.1f} pages/s) -> {out_path}")
 
 
 @app.command()
@@ -104,7 +136,7 @@ def search(
         with open_index(index_path) as index:
             if boolean_only:
                 hits = boolean.search(index, query, engine)
-                rows = [{"doc_id": d, "title": index.docs[d].title, "path": index.docs[d].path}
+                rows = [{"doc_id": d, "title": index.docs[d].title, "path": display_path(index.docs[d].path)}
                         for d in hits[:k]]
                 if as_json:
                     print(json.dumps(rows, ensure_ascii=False, indent=2))
@@ -138,7 +170,7 @@ def search(
 
 @app.command()
 def stats(
-    corpus: Annotated[Path, typer.Argument(help="Directory with documents")],
+    corpus: Annotated[Path, typer.Argument(help="Directory with documents or a .jsonl file from findex crawl")],
     top: Annotated[int, typer.Option("--top", min=1)] = 20,
     greedy: Annotated[bool, typer.Option("--greedy", help="List-based version of lab 1")] = False,
 ) -> None:

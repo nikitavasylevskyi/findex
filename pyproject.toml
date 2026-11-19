@@ -1,6 +1,6 @@
 [project]
 name = "findex"
-version = "0.5.0"
+version = "0.6.0"
 description = "Full-text search over Python PEPs and documentation"
 readme = "README.md"
 authors = [
@@ -8,7 +8,9 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "httpx>=0.28.1",
     "rich>=15.0.0",
+    "selectolax>=1.0.2",
     "typer>=0.29.2",
 ]
 

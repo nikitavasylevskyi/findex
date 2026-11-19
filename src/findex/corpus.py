@@ -1,7 +1,14 @@
-"""Reading the corpus lazily, one document at a time."""
+"""Reading the corpus lazily, one document at a time.
+
+A corpus is either a directory of text files or a JSONL file written by
+``findex crawl`` (one page per line). A crawled page is addressed as
+``<file.jsonl>#<byte offset of its line>``, so its text can be read back for
+snippets without keeping the pages anywhere else.
+"""
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -47,9 +54,59 @@ def read_document(doc_id: int, path: Path) -> Document:
     return Document(doc_id, path, guess_title(path, text), text)
 
 
+def is_jsonl(path: str | Path) -> bool:
+    return Path(path).suffix == ".jsonl"
+
+
+def iter_jsonl(path: Path) -> Iterator[Document]:
+    """Pages from a crawl, read line by line."""
+    with path.open("rb") as f:
+        doc_id = 0
+        while True:
+            offset = f.tell()
+            line = f.readline()
+            if not line:
+                break
+            if not line.strip():
+                continue
+            page = json.loads(line)
+            yield Document(doc_id, Path(f"{path}#{offset}"), page.get("title") or page["url"], page["text"])
+            doc_id += 1
+
+
+def _jsonl_record(ref: str) -> dict[str, str] | None:
+    file, _, offset = ref.rpartition("#")
+    if not is_jsonl(file) or not offset.isdigit():
+        return None
+    with open(file, "rb") as f:
+        f.seek(int(offset))
+        record: dict[str, str] = json.loads(f.readline())
+        return record
+
+
+def load_text(ref: str) -> str:
+    """Text of a document by its stored path (a file or a crawled page)."""
+    record = _jsonl_record(ref)
+    if record is not None:
+        return record["text"]
+    return Path(ref).read_text(encoding="utf-8", errors="replace")
+
+
+def display_path(ref: str) -> str:
+    """What to show for a document: the file path, or the URL of a crawled page."""
+    try:
+        record = _jsonl_record(ref)
+    except (OSError, ValueError):
+        return ref
+    return record["url"] if record is not None else ref
+
+
 def iter_documents(root: str | Path) -> Iterator[Document]:
     """Yield documents one by one; only the current file is held in memory."""
     root = Path(root)
+    if root.is_file() and is_jsonl(root):
+        yield from iter_jsonl(root)
+        return
     if not root.is_dir():
         raise FileNotFoundError(f"corpus directory not found: {root}")
     for doc_id, path in enumerate(iter_paths(root)):

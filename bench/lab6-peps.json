@@ -1,0 +1,43 @@
+{
+  "url": "https://peps.python.org/",
+  "pages": 200,
+  "cpu": "AMD Ryzen 7 7800X3D 8-Core Processor",
+  "rows": [
+    {
+      "concurrency": 1,
+      "per_host": 1,
+      "wall": 36.47650009999052,
+      "pages": 200,
+      "rate": 5.482982178985203,
+      "errors": 0,
+      "rss_mib": 63.1484375
+    },
+    {
+      "concurrency": 5,
+      "per_host": 5,
+      "wall": 7.767428499995731,
+      "pages": 200,
+      "rate": 25.748547283069286,
+      "errors": 0,
+      "rss_mib": 62.11328125
+    },
+    {
+      "concurrency": 20,
+      "per_host": 20,
+      "wall": 1.6870086999842897,
+      "pages": 200,
+      "rate": 118.55303413779816,
+      "errors": 0,
+      "rss_mib": 63.04296875
+    },
+    {
+      "concurrency": 20,
+      "per_host": 4,
+      "wall": 3.6299985999939963,
+      "pages": 200,
+      "rate": 55.09643998218919,
+      "errors": 0,
+      "rss_mib": 60.89453125
+    }
+  ]
+}

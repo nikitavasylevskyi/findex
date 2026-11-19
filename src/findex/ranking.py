@@ -9,9 +9,9 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import lru_cache
-from pathlib import Path
 from typing import Literal, Protocol
 
+from findex.corpus import display_path, load_text
 from findex.index import Index, Posting
 from findex.query import Node, parse
 from findex.timing import timed
@@ -104,7 +104,7 @@ class Searcher:
         for doc_id, score in top:
             meta = self.index.docs[doc_id]
             snip = make_snippet(meta.path, terms) if snippets else ""
-            results.append(SearchResult(score, doc_id, meta.title, meta.path, snip))
+            results.append(SearchResult(score, doc_id, meta.title, display_path(meta.path), snip))
         return results
 
 
@@ -118,8 +118,8 @@ def make_snippet(path: str, terms: tuple[str, ...], radius: int = 80,
     "Best" = the occurrence whose window contains the most distinct query terms.
     """
     try:
-        text = Path(path).read_text(encoding="utf-8", errors="replace")
-    except OSError:
+        text = load_text(path)
+    except (OSError, ValueError, KeyError):
         return ""
     text = re.sub(r"\s+", " ", text)
     wanted = set(terms)
