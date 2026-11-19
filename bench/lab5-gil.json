@@ -1,0 +1,80 @@
+{
+  "python": "3.13.18",
+  "gil": true,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+  "cpus": 2,
+  "rows": [
+    {
+      "executor": "serial",
+      "workers": 1,
+      "wall": 2.40746498600015,
+      "cpu": 2.3852026090000003,
+      "rss_mib": 73.6328125,
+      "merge": 3.010000000358559e-06
+    },
+    {
+      "executor": "threads",
+      "workers": 1,
+      "wall": 2.518913580999879,
+      "cpu": 2.517540627,
+      "rss_mib": 110.8671875,
+      "merge": 0.08150203299987879
+    },
+    {
+      "executor": "threads",
+      "workers": 2,
+      "wall": 2.8747015070000543,
+      "cpu": 2.892237226,
+      "rss_mib": 126.79296875,
+      "merge": 0.11385740000014266
+    },
+    {
+      "executor": "threads",
+      "workers": 4,
+      "wall": 3.3386746409998977,
+      "cpu": 3.363136478,
+      "rss_mib": 148.62890625,
+      "merge": 0.21922197000003507
+    },
+    {
+      "executor": "threads",
+      "workers": 8,
+      "wall": 3.9036696030000257,
+      "cpu": 3.9911192000000004,
+      "rss_mib": 176.22265625,
+      "merge": 0.2728913429998556
+    },
+    {
+      "executor": "processes",
+      "workers": 1,
+      "wall": 3.2822404089999964,
+      "cpu": 2.766945878,
+      "rss_mib": 133.9375,
+      "merge": 0.08630619699988529
+    },
+    {
+      "executor": "processes",
+      "workers": 2,
+      "wall": 2.282707931999994,
+      "cpu": 3.006842639,
+      "rss_mib": 137.078125,
+      "merge": 0.14939094399983333
+    },
+    {
+      "executor": "processes",
+      "workers": 4,
+      "wall": 2.3279507869999634,
+      "cpu": 3.0923452069999997,
+      "rss_mib": 154.07421875,
+      "merge": 0.1774446680001347
+    },
+    {
+      "executor": "processes",
+      "workers": 8,
+      "wall": 2.7783985109999776,
+      "cpu": 3.320316639,
+      "rss_mib": 176.15234375,
+      "merge": 0.19832865700004731
+    }
+  ]
+}

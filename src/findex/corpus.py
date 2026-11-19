@@ -42,11 +42,15 @@ def iter_paths(root: Path) -> Iterator[Path]:
             yield path
 
 
+def read_document(doc_id: int, path: Path) -> Document:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return Document(doc_id, path, guess_title(path, text), text)
+
+
 def iter_documents(root: str | Path) -> Iterator[Document]:
     """Yield documents one by one; only the current file is held in memory."""
     root = Path(root)
     if not root.is_dir():
         raise FileNotFoundError(f"corpus directory not found: {root}")
     for doc_id, path in enumerate(iter_paths(root)):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        yield Document(doc_id, path, guess_title(path, text), text)
+        yield read_document(doc_id, path)

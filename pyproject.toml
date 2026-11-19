@@ -1,6 +1,6 @@
 [project]
 name = "findex"
-version = "0.4.0"
+version = "0.5.0"
 description = "Full-text search over Python PEPs and documentation"
 readme = "README.md"
 authors = [
@@ -17,6 +17,10 @@ requires = ["uv_build>=0.11.32,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
+bench = [
+    "matplotlib>=3.11.2",
+    "psutil>=7.2.2 ; sys_platform == 'win32'",
+]
 dev = [
     "hypothesis>=6.170.16",
     "pyright>=1.1.414",

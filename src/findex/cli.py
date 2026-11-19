@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import time
 from dataclasses import asdict
@@ -16,8 +17,8 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, T
 from rich.table import Table
 
 from findex import __version__, boolean, storage
-from findex.corpus import Document, iter_paths
-from findex.index import build_index
+from findex.corpus import iter_paths
+from findex.parallel import ExecutorKind, build_parallel
 from findex.query import QuerySyntaxError
 from findex.ranking import SCORERS, Searcher
 from findex.search import open_index
@@ -70,6 +71,8 @@ def index_cmd(
     fmt: Annotated[Fmt, typer.Option("--format")] = "binary",
     positions: Annotated[bool, typer.Option("--positions/--no-positions",
                                             help="Store token positions (needed for phrases)")] = True,
+    workers: Annotated[int, typer.Option("--workers", "-w", min=1, help="Parallel workers")] = os.cpu_count() or 1,
+    executor: Annotated[ExecutorKind, typer.Option("--executor", "-e")] = "processes",
 ) -> None:
     """Build an index from a directory of documents."""
     if not corpus.is_dir():
@@ -79,11 +82,8 @@ def index_cmd(
     with Progress(TextColumn("[bold]indexing"), BarColumn(), MofNCompleteColumn(), TimeElapsedColumn(),
                   console=err, transient=True) as progress:
         task = progress.add_task("index", total=total)
-
-        def step(_: Document) -> None:
-            progress.advance(task)
-
-        index = build_index(corpus, positions=positions, on_document=step)
+        index, _ = build_parallel(corpus, workers, executor, positions,
+                                  on_chunk=lambda n: progress.advance(task, n))
     storage.save(index, out_path, fmt)
     err.print(f"{index.num_docs} documents, {len(index)} terms -> {out_path} "
               f"({out_path.stat().st_size / 2**20:.1f} MiB) in {time.perf_counter() - t0:.1f} s")

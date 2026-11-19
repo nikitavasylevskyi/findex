@@ -27,7 +27,7 @@ from array import array
 from pathlib import Path
 from typing import Any, Literal
 
-from findex.index import DocMeta, Index, Posting
+from findex.index import DocMeta, Index, PackedPostings, Posting
 from findex.timing import timed
 
 MAGIC = b"FIDX"
@@ -48,17 +48,26 @@ def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
         return
     data = array("I")
     terms: list[tuple[str, int, int]] = []
-    for term, plist in index.items():
+    for term in index:
         start = len(data)
         prev = 0
-        for p in plist:
-            data.append(p.doc_id - prev)
-            prev = p.doc_id
-        data.extend(p.tf for p in plist)
-        if index.with_positions:
-            for p in plist:
-                data.extend(p.positions)
-        terms.append((term, len(plist), len(data) - start))
+        raw = index.raw(term)
+        if isinstance(raw, PackedPostings):  # straight from a parallel build: no need to unpack
+            for d in raw.doc_ids:
+                data.append(d - prev)
+                prev = d
+            data.extend(raw.tfs)
+            if index.with_positions:
+                data.extend(raw.positions)
+        else:
+            for p in raw:
+                data.append(p.doc_id - prev)
+                prev = p.doc_id
+            data.extend(p.tf for p in raw)
+            if index.with_positions:
+                for p in raw:
+                    data.extend(p.positions)
+        terms.append((term, len(raw), len(data) - start))
     header = json.dumps({
         "positions": index.with_positions,
         "docs": [[d.path, d.title, d.length] for d in index.docs],
