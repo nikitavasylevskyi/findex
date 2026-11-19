@@ -1,6 +1,6 @@
 name: Tags and release
 
-# Lab commits are named "Lab N: ..."; each gets a lab-0N tag.
+# Lab commits are named "Lab N: ..."; the last one of each lab gets the lab-0N tag.
 # When the version in pyproject.toml has no vX.Y.Z tag yet, the wheel is built
 # and published as a GitHub Release.
 
@@ -21,14 +21,18 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Lab tags
+        # lab-0N points at the last "Lab N:" commit, so follow-up fixes of a lab move its tag
         run: |
-          git log --reverse --format='%H %s' | while read -r sha subject; do
+          declare -A last
+          while read -r sha subject; do
             if [[ "$subject" =~ ^Lab\ ([0-9]+): ]]; then
-              tag=$(printf 'lab-%02d' "${BASH_REMATCH[1]}")
-              if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-                git tag "$tag" "$sha"
-                git push origin "$tag"
-              fi
+              last[$(printf 'lab-%02d' "${BASH_REMATCH[1]}")]=$sha
+            fi
+          done < <(git log --reverse --format='%H %s')
+          for tag in "${!last[@]}"; do
+            if [[ "$(git rev-parse -q --verify "refs/tags/$tag^{commit}")" != "${last[$tag]}" ]]; then
+              git tag -f "$tag" "${last[$tag]}"
+              git push -f origin "refs/tags/$tag"
             fi
           done
 
