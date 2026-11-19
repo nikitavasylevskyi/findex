@@ -10,6 +10,7 @@ from typing import Iterator
 SUFFIXES = (".rst", ".txt", ".md")
 
 _PEP_TITLE = re.compile(r"^Title:\s*(.+)$", re.MULTILINE)
+_ROLE = re.compile(r":[\w:]+:`!?~?([^`<]+?)(?:\s*<[^>]*>)?`")
 _UNDERLINE = re.compile(r"^([=\-~^\"'`#*+]){3,}\s*$")
 
 
@@ -30,7 +31,7 @@ def guess_title(path: Path, text: str) -> str:
     lines = text.splitlines()
     for i in range(1, min(len(lines), 40)):
         if _UNDERLINE.match(lines[i]) and lines[i - 1].strip() and not _UNDERLINE.match(lines[i - 1]):
-            return lines[i - 1].strip().strip("*`:")
+            return _ROLE.sub(r"\1", lines[i - 1].strip()).strip("*`")
     return path.stem
 
 
