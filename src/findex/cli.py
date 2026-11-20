@@ -122,6 +122,30 @@ def crawl_cmd(
 
 
 @app.command()
+def serve(
+    index_path: Annotated[Path | None, typer.Option("--index", "-i", help="Index file [env: INDEX_PATH]")] = None,
+    host: Annotated[str | None, typer.Option("--host", help="[env: HOST, default 127.0.0.1]")] = None,
+    port: Annotated[int | None, typer.Option("--port", "-p", help="[env: PORT, default 8000]")] = None,
+    workers: Annotated[int | None, typer.Option("--workers", "-w", min=1,
+                                                help="uvicorn worker processes [env: WORKERS, default 1]")] = None,
+) -> None:
+    """Run the web search (HTML page at /, JSON API described at /api)."""
+    import uvicorn
+
+    from findex.web.settings import Settings
+
+    # Options become environment variables, so that every worker process builds the same Settings.
+    for name, value in (("INDEX_PATH", index_path), ("HOST", host), ("PORT", port), ("WORKERS", workers)):
+        if value is not None:
+            os.environ[name] = str(value)
+    settings = Settings()  # type: ignore[call-arg]
+    if not settings.index_path.is_file():
+        raise fail(f"index not found: {settings.index_path} (build it with: findex index <corpus> -o ...)")
+    uvicorn.run("findex.web.app:create_app", factory=True, host=settings.host, port=settings.port,
+                workers=settings.workers, log_level=settings.log_level, proxy_headers=True, forwarded_allow_ips="*")
+
+
+@app.command()
 def search(
     query: Annotated[str, typer.Argument(help='Query, e.g. \'python AND (async OR await) "event loop"\'')],
     index_path: Annotated[Path, typer.Option("--index", "-i", help="Index file")] = Path("index.bin"),

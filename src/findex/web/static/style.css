@@ -1,0 +1,43 @@
+:root {
+  --bg: #fbfbfa; --fg: #1f2328; --muted: #656d76; --line: #e3e4e6; --accent: #2f5d8a; --mark: #fff1a8;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #16181c; --fg: #e6e7e9; --muted: #9aa1a9; --line: #2c3036; --accent: #7fb0e0; --mark: #5c4d00; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); line-height: 1.5; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.top { display: flex; gap: 1.5rem; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--bg); flex-wrap: wrap; }
+.logo { font-weight: 700; font-size: 1.4rem; color: var(--fg); letter-spacing: -0.02em; }
+.logo span { color: var(--accent); }
+.search { display: flex; gap: .5rem; flex: 1; max-width: 720px; }
+.search input { flex: 1; min-width: 0; font: inherit; padding: .55rem .8rem; border: 1px solid var(--line);
+  border-radius: 8px; background: transparent; color: inherit; }
+.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.search select, .search button { font: inherit; padding: .5rem .8rem; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: inherit; }
+.search button { background: var(--accent); color: #fff; border-color: var(--accent); cursor: pointer; }
+main { max-width: 780px; padding: 1rem 1.5rem 3rem; margin-left: max(1.5rem, calc((100vw - 1100px) / 2)); }
+.meta, .path, .back { color: var(--muted); font-size: .875rem; }
+.notice { padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 8px; }
+.hits { padding-left: 0; list-style: none; }
+.hits li { padding: .9rem 0; border-bottom: 1px solid var(--line); }
+.title { font-size: 1.1rem; font-weight: 600; }
+.score { margin-left: .5rem; font-variant-numeric: tabular-nums; border: 1px solid var(--line); border-radius: 4px;
+  padding: 0 .3rem; font-size: .75rem; }
+.snippet { margin: .3rem 0 0; }
+mark { background: var(--mark); color: inherit; padding: 0 .1em; border-radius: 2px; }
+.pages { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.pages a, .pages span { padding: .3rem .65rem; border: 1px solid var(--line); border-radius: 6px; }
+.pages .current { background: var(--accent); color: #fff; border-color: var(--accent); }
+.intro h1 { font-size: 1.6rem; margin-top: 2rem; letter-spacing: -0.01em; }
+.examples a { display: inline-block; margin: .25rem .4rem .25rem 0; padding: .2rem .6rem; border: 1px solid var(--line);
+  border-radius: 999px; font-size: .9rem; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; }
+.doc h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+.doc pre { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, Consolas, monospace; font-size: .85rem;
+  line-height: 1.55; padding: 1rem; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+footer { color: var(--muted); font-size: .8rem; padding: 1.5rem; border-top: 1px solid var(--line); }

@@ -1,0 +1,14 @@
+# Render Blueprint: New → Blueprint → this repository.
+services:
+  - type: web
+    name: findex
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: LOG_LEVEL
+        value: info
+      - key: WORKERS
+        value: "1"

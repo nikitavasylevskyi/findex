@@ -21,3 +21,22 @@ jobs:
         run: uv run pyright
       - name: Pytest
         run: uv run pytest --cov --cov-report=term
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t findex .
+      - name: Run it with INDEX_PATH and check the endpoints
+        run: |
+          docker run -d --name findex -p 8000:8000 -e INDEX_PATH=/app/index.bin findex
+          for i in $(seq 1 60); do
+            if curl -fs localhost:8000/health; then break; fi
+            sleep 1
+          done
+          echo
+          curl -fs "localhost:8000/search?q=assignment+expressions&k=3" | python3 -m json.tool | head -20
+          curl -fs -o /dev/null -w "page: %{http_code}\n" "localhost:8000/?q=walrus"
+          test "$(docker exec findex id -u)" != "0"
+          docker logs findex

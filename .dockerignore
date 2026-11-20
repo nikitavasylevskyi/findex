@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+.venv-ft
+data
+dist
+bench
+docs
+eval
+tests
+*.bin
+*.pkl
+*.jsonl
+**/__pycache__
+.pytest_cache
+.ruff_cache

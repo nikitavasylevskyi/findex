@@ -1,6 +1,6 @@
 [project]
 name = "findex"
-version = "0.6.0"
+version = "0.7.0"
 description = "Full-text search over Python PEPs and documentation"
 readme = "README.md"
 authors = [
@@ -8,10 +8,14 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.165.0",
     "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "pydantic-settings>=2.16.3",
     "rich>=15.0.0",
     "selectolax>=1.0.2",
     "typer>=0.29.2",
+    "uvicorn>=0.54.0",
 ]
 
 [build-system]
@@ -48,6 +52,7 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
 markers = ["slow: takes longer than a second"]
 
 [tool.coverage.run]

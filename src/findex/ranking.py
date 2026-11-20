@@ -83,7 +83,9 @@ class Searcher:
 
     @timed
     def search(self, query: str, scorer: Scorer | None = None, k: int = 10,
-               snippets: bool = True) -> list[SearchResult]:
+               snippets: bool = True, offset: int = 0,
+               mark: tuple[str, str] = ("**", "**")) -> list[SearchResult]:
+        """Top ``k`` results after skipping ``offset`` (pages of a result list)."""
         scorer = scorer or SCORERS["bm25"]
         hits_before = self.matching.cache_info().hits
         doc_ids, terms = self.matching(query)
@@ -99,13 +101,17 @@ class Searcher:
                     scores[p.doc_id] += scorer.score(self.index, df, p)
         for doc_id in candidates:  # e.g. "NOT x" alone: matching, but no positive terms
             scores.setdefault(doc_id, 0.0)
-        top = heapq.nlargest(k, scores.items(), key=lambda item: (item[1], -item[0]))
+        top = heapq.nlargest(offset + k, scores.items(), key=lambda item: (item[1], -item[0]))[offset:]
         results: list[SearchResult] = []
         for doc_id, score in top:
             meta = self.index.docs[doc_id]
-            snip = make_snippet(meta.path, terms) if snippets else ""
+            snip = make_snippet(meta.path, terms, mark=mark) if snippets else ""
             results.append(SearchResult(score, doc_id, meta.title, display_path(meta.path), snip))
         return results
+
+    def count(self, query: str) -> int:
+        """How many documents match (cached together with the match itself)."""
+        return len(self.matching(query)[0])
 
 
 _WORD = re.compile(r"[^\W_]+(?:['’_]*[^\W_]+)*")
