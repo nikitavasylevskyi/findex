@@ -13,3 +13,7 @@ __pycache__/
 htmlcov/
 dist/
 .venv-ft/
+.benchmarks/
+embeddings*.npy
+embeddings*.json
+/data

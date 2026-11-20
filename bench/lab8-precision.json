@@ -1,0 +1,425 @@
+{
+ "model": "minishlab/potion-base-8M",
+ "rows": [
+  {
+   "text": "walrus operator assignment expression",
+   "kind": "lab 3",
+   "lexical": 0.4,
+   "lexical_top": [
+    "peps/pep-0572.rst",
+    "docs/reference__expressions.rst",
+    "peps/pep-0622.rst",
+    "peps/pep-0635.rst",
+    "docs/tutorial__datastructures.rst"
+   ],
+   "semantic": 0.6,
+   "semantic_top": [
+    "peps/pep-0577.rst",
+    "docs/reference__simple_stmts.rst",
+    "docs/reference__expressions.rst",
+    "peps/pep-0642.rst",
+    "peps/pep-0572.rst"
+   ],
+   "hybrid": 0.6,
+   "hybrid_top": [
+    "docs/reference__expressions.rst",
+    "peps/pep-0572.rst",
+    "peps/pep-0577.rst",
+    "peps/pep-0622.rst",
+    "peps/pep-0824.rst"
+   ]
+  },
+  {
+   "text": "structural pattern matching",
+   "kind": "lab 3",
+   "lexical": 1.0,
+   "lexical_top": [
+    "peps/pep-0635.rst",
+    "peps/pep-0642.rst",
+    "docs/whatsnew__3.10.rst",
+    "docs/reference__compound_stmts.rst",
+    "peps/pep-0634.rst"
+   ],
+   "semantic": 1.0,
+   "semantic_top": [
+    "peps/pep-0635.rst",
+    "peps/pep-0642.rst",
+    "peps/pep-0622.rst",
+    "peps/pep-0634.rst",
+    "docs/whatsnew__3.10.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "peps/pep-0635.rst",
+    "peps/pep-0642.rst",
+    "docs/whatsnew__3.10.rst",
+    "peps/pep-0634.rst",
+    "peps/pep-0622.rst"
+   ]
+  },
+  {
+   "text": "f-string formatting",
+   "kind": "lab 3",
+   "lexical": 1.0,
+   "lexical_top": [
+    "peps/pep-0498.rst",
+    "peps/pep-0682.rst",
+    "peps/pep-0786.rst",
+    "docs/library__string.rst",
+    "docs/tutorial__inputoutput.rst"
+   ],
+   "semantic": 1.0,
+   "semantic_top": [
+    "peps/pep-3101.rst",
+    "docs/builtins__stdtypes.rst",
+    "docs/library__string.rst",
+    "peps/pep-0498.rst",
+    "docs/tutorial__inputoutput.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "peps/pep-0498.rst",
+    "docs/library__string.rst",
+    "peps/pep-3101.rst",
+    "docs/tutorial__inputoutput.rst",
+    "docs/builtins__stdtypes.rst"
+   ]
+  },
+  {
+   "text": "type hints generics",
+   "kind": "lab 3",
+   "lexical": 0.8,
+   "lexical_top": [
+    "peps/pep-0482.rst",
+    "peps/pep-0560.rst",
+    "peps/pep-0484.rst",
+    "peps/pep-0604.rst",
+    "docs/library__typing.rst"
+   ],
+   "semantic": 0.6,
+   "semantic_top": [
+    "peps/pep-0484.rst",
+    "peps/pep-0695.rst",
+    "peps/pep-0827.rst",
+    "peps/pep-0483.rst",
+    "peps/pep-0253.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "peps/pep-0484.rst",
+    "peps/pep-0483.rst",
+    "docs/library__typing.rst",
+    "peps/pep-0482.rst",
+    "peps/pep-0560.rst"
+   ]
+  },
+  {
+   "text": "asyncio event loop",
+   "kind": "lab 3",
+   "lexical": 1.0,
+   "lexical_top": [
+    "docs/library__asyncio-runner.rst",
+    "docs/howto__a-conceptual-overview-of-asyncio.rst",
+    "docs/library__asyncio-dev.rst",
+    "docs/library__asyncio-eventloop.rst",
+    "docs/library__asyncio-threading.rst"
+   ],
+   "semantic": 0.4,
+   "semantic_top": [
+    "docs/whatsnew__3.14.rst",
+    "docs/library__asyncio-eventloop.rst",
+    "docs/whatsnew__3.5.rst",
+    "docs/whatsnew__3.8.rst",
+    "docs/library__asyncio-task.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "docs/library__asyncio-eventloop.rst",
+    "docs/library__asyncio-runner.rst",
+    "docs/howto__a-conceptual-overview-of-asyncio.rst",
+    "docs/library__asyncio-threading.rst",
+    "docs/library__asyncio-task.rst"
+   ]
+  },
+  {
+   "text": "global interpreter lock free threading",
+   "kind": "lab 3",
+   "lexical": 0.6,
+   "lexical_top": [
+    "docs/howto__free-threading-python.rst",
+    "docs/glossary.rst",
+    "docs/howto__free-threading-extensions.rst",
+    "peps/pep-0311.rst",
+    "docs/c-api__synchronization.rst"
+   ],
+   "semantic": 0.2,
+   "semantic_top": [
+    "docs/glossary.rst",
+    "peps/pep-0797.rst",
+    "docs/reference__executionmodel.rst",
+    "docs/c-api__threads.rst",
+    "docs/library__concurrent.futures.rst"
+   ],
+   "hybrid": 0.4,
+   "hybrid_top": [
+    "docs/glossary.rst",
+    "docs/library__multiprocessing.rst",
+    "docs/c-api__threads.rst",
+    "peps/pep-0805.rst",
+    "docs/library__threading.rst"
+   ]
+  },
+  {
+   "text": "dataclasses",
+   "kind": "lab 3",
+   "lexical": 0.6,
+   "lexical_top": [
+    "peps/pep-0712.rst",
+    "peps/pep-0681.rst",
+    "docs/library__dataclasses.rst",
+    "peps/pep-0767.rst",
+    "peps/pep-0589.rst"
+   ],
+   "semantic": 0.4,
+   "semantic_top": [
+    "peps/pep-0557.rst",
+    "docs/library__pyclbr.rst",
+    "peps/pep-0681.rst",
+    "docs/glossary.rst",
+    "peps/pep-3119.rst"
+   ],
+   "hybrid": 0.8,
+   "hybrid_top": [
+    "peps/pep-0681.rst",
+    "peps/pep-0557.rst",
+    "docs/library__dataclasses.rst",
+    "peps/pep-0712.rst",
+    "docs/howto__enum.rst"
+   ]
+  },
+  {
+   "text": "exception groups",
+   "kind": "lab 3",
+   "lexical": 0.4,
+   "lexical_top": [
+    "peps/pep-0654.rst",
+    "peps/pep-0785.rst",
+    "docs/library__binascii.rst",
+    "docs/library__re.rst",
+    "peps/pep-0650.rst"
+   ],
+   "semantic": 0.4,
+   "semantic_top": [
+    "peps/pep-0654.rst",
+    "docs/tutorial__errors.rst",
+    "docs/builtins__exceptions.rst",
+    "docs/reference__compound_stmts.rst",
+    "docs/reference__simple_stmts.rst"
+   ],
+   "hybrid": 0.6,
+   "hybrid_top": [
+    "peps/pep-0654.rst",
+    "docs/builtins__exceptions.rst",
+    "peps/pep-0785.rst",
+    "peps/pep-0678.rst",
+    "docs/tutorial__errors.rst"
+   ]
+  },
+  {
+   "text": "unicode normalization",
+   "kind": "lab 3",
+   "lexical": 1.0,
+   "lexical_top": [
+    "peps/pep-3131.rst",
+    "peps/pep-0672.rst",
+    "docs/library__unicodedata.rst",
+    "docs/reference__lexical_analysis.rst",
+    "docs/library__stringprep.rst"
+   ],
+   "semantic": 0.4,
+   "semantic_top": [
+    "docs/library__unicodedata.rst",
+    "peps/pep-0261.rst",
+    "docs/whatsnew__2.0.rst",
+    "peps/pep-0100.rst",
+    "docs/reference__lexical_analysis.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "docs/library__unicodedata.rst",
+    "docs/reference__lexical_analysis.rst",
+    "peps/pep-0672.rst",
+    "docs/howto__unicode.rst",
+    "peps/pep-3131.rst"
+   ]
+  },
+  {
+   "text": "garbage collection reference counting",
+   "kind": "lab 3",
+   "lexical": 1.0,
+   "lexical_top": [
+    "peps/pep-0703.rst",
+    "peps/pep-0848.rst",
+    "docs/library__gc.rst",
+    "docs/extending__extending.rst",
+    "peps/pep-0442.rst"
+   ],
+   "semantic": 0.8,
+   "semantic_top": [
+    "peps/pep-0703.rst",
+    "docs/extending__extending.rst",
+    "docs/library__gc.rst",
+    "docs/reference__datamodel.rst",
+    "peps/pep-0848.rst"
+   ],
+   "hybrid": 1.0,
+   "hybrid_top": [
+    "peps/pep-0703.rst",
+    "docs/extending__extending.rst",
+    "docs/library__gc.rst",
+    "peps/pep-0848.rst",
+    "peps/pep-0442.rst"
+   ]
+  },
+  {
+   "text": "assign a value inside an if condition and reuse it",
+   "kind": "paraphrase",
+   "lexical": 0.2,
+   "lexical_top": [
+    "peps/pep-0572.rst",
+    "peps/pep-0701.rst",
+    "docs/library__ast.rst",
+    "peps/pep-0824.rst",
+    "docs/tutorial__introduction.rst"
+   ],
+   "semantic": 0.0,
+   "semantic_top": [
+    "docs/faq__programming.rst",
+    "peps/pep-0555.rst",
+    "peps/pep-0267.rst",
+    "docs/library__winreg.rst",
+    "docs/extending__extending.rst"
+   ],
+   "hybrid": 0.2,
+   "hybrid_top": [
+    "peps/pep-0555.rst",
+    "peps/pep-0577.rst",
+    "docs/faq__programming.rst",
+    "peps/pep-0572.rst",
+    "docs/library__functools.rst"
+   ]
+  },
+  {
+   "text": "check the shape of an object and pull out its parts, like a switch statement",
+   "kind": "paraphrase",
+   "lexical": 0.4,
+   "lexical_top": [
+    "docs/library__turtle.rst",
+    "peps/pep-0646.rst",
+    "peps/pep-0622.rst",
+    "peps/pep-0465.rst",
+    "peps/pep-0635.rst"
+   ],
+   "semantic": 0.2,
+   "semantic_top": [
+    "peps/pep-0818.rst",
+    "peps/pep-0636.rst",
+    "peps/pep-0340.rst",
+    "peps/pep-0214.rst",
+    "peps/pep-3103.rst"
+   ],
+   "hybrid": 0.2,
+   "hybrid_top": [
+    "docs/library__turtle.rst",
+    "peps/pep-0635.rst",
+    "peps/pep-3103.rst",
+    "peps/pep-0512.rst",
+    "peps/pep-0275.rst"
+   ]
+  },
+  {
+   "text": "put variables straight into text literals",
+   "kind": "paraphrase",
+   "lexical": 0.0,
+   "lexical_top": [
+    "docs/tutorial__controlflow.rst",
+    "docs/tutorial__introduction.rst",
+    "docs/whatsnew__3.0.rst",
+    "peps/pep-0414.rst",
+    "peps/pep-0501.rst"
+   ],
+   "semantic": 0.2,
+   "semantic_top": [
+    "peps/pep-0586.rst",
+    "peps/pep-0675.rst",
+    "peps/pep-0414.rst",
+    "peps/pep-0313.rst",
+    "docs/reference__lexical_analysis.rst"
+   ],
+   "hybrid": 0.0,
+   "hybrid_top": [
+    "peps/pep-0414.rst",
+    "docs/tutorial__controlflow.rst",
+    "peps/pep-0501.rst",
+    "docs/tutorial__introduction.rst",
+    "peps/pep-0822.rst"
+   ]
+  },
+  {
+   "text": "generate init and repr automatically for simple record classes",
+   "kind": "paraphrase",
+   "lexical": 0.4,
+   "lexical_top": [
+    "peps/pep-0557.rst",
+    "docs/library__dataclasses.rst",
+    "peps/pep-0209.rst",
+    "docs/howto__logging-cookbook.rst",
+    "peps/pep-0376.rst"
+   ],
+   "semantic": 0.0,
+   "semantic_top": [
+    "docs/library__reprlib.rst",
+    "peps/pep-0255.rst",
+    "peps/pep-3138.rst",
+    "docs/whatsnew__2.2.rst",
+    "docs/whatsnew__2.3.rst"
+   ],
+   "hybrid": 0.4,
+   "hybrid_top": [
+    "peps/pep-0557.rst",
+    "docs/whatsnew__2.3.rst",
+    "docs/library__dataclasses.rst",
+    "docs/tutorial__classes.rst",
+    "docs/library__pprint.rst"
+   ]
+  },
+  {
+   "text": "raise several unrelated errors together and handle each kind separately",
+   "kind": "paraphrase",
+   "lexical": 0.6,
+   "lexical_top": [
+    "peps/pep-0785.rst",
+    "peps/pep-0654.rst",
+    "docs/tutorial__errors.rst",
+    "peps/pep-3118.rst",
+    "peps/pep-0428.rst"
+   ],
+   "semantic": 0.2,
+   "semantic_top": [
+    "peps/pep-0654.rst",
+    "peps/pep-0317.rst",
+    "docs/howto__logging-cookbook.rst",
+    "peps/pep-0310.rst",
+    "peps/pep-0830.rst"
+   ],
+   "hybrid": 0.6,
+   "hybrid_top": [
+    "peps/pep-0654.rst",
+    "peps/pep-0785.rst",
+    "docs/tutorial__errors.rst",
+    "peps/pep-3103.rst",
+    "peps/pep-0678.rst"
+   ]
+  }
+ ]
+}

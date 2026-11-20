@@ -26,7 +26,7 @@ from findex.crawl.urls import canonicalize, host_of
 log = logging.getLogger("findex.crawl")
 status_log = logging.getLogger("findex.crawl.status")  # one line per URL, goes to crawl.log
 
-USER_AGENT = "findex-crawler/0.6 (student project; https://github.com/nikitavasylevskyi/findex)"
+USER_AGENT = "findex-crawler/1.0 (student project; https://github.com/nikitavasylevskyi/findex)"
 
 
 @dataclass

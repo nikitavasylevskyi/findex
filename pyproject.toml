@@ -1,6 +1,6 @@
 [project]
 name = "findex"
-version = "0.7.0"
+version = "1.0.0"
 description = "Full-text search over Python PEPs and documentation"
 readme = "README.md"
 authors = [

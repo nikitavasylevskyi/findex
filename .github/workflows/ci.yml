@@ -21,6 +21,26 @@ jobs:
         run: uv run pyright
       - name: Pytest
         run: uv run pytest --cov --cov-report=term
+      - name: Restore the benchmarks of the previous run on main
+        uses: actions/cache/restore@v4
+        with:
+          path: .benchmarks
+          key: benchmarks-${{ github.sha }}
+          restore-keys: benchmarks-
+      - name: Benchmarks (fail if 50 % slower than the previous run)
+        run: |
+          CMP=""
+          if ls .benchmarks/*/*.json > /dev/null 2>&1; then
+            CMP="--benchmark-compare --benchmark-compare-fail=mean:50%"
+          fi
+          uv run pytest tests/test_benchmarks.py --benchmark-enable --benchmark-only \
+            --benchmark-autosave --benchmark-columns=min,mean,median,max,rounds $CMP
+      - name: Keep these benchmarks for the next run
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: .benchmarks
+          key: benchmarks-${{ github.sha }}
 
   docker:
     runs-on: ubuntu-latest
@@ -37,6 +57,8 @@ jobs:
           done
           echo
           curl -fs "localhost:8000/search?q=assignment+expressions&k=3" | python3 -m json.tool | head -20
+          curl -fs "localhost:8000/search?q=put+variables+straight+into+text+literals&mode=hybrid&k=5" \
+            | python3 -c "import json,sys; print([h['title'] for h in json.load(sys.stdin)['hits']])"
           curl -fs -o /dev/null -w "page: %{http_code}\n" "localhost:8000/?q=walrus"
           test "$(docker exec findex id -u)" != "0"
           docker logs findex
