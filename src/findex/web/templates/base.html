@@ -12,6 +12,13 @@
     <a class="logo" href="/">find<span>ex</span></a>
     <form class="search" action="/" method="get" role="search">
       <input type="search" name="q" value="{{ q }}" placeholder="Пошук у PEP і документації Python" aria-label="Запит" autofocus>
+      {% if semantic_on %}
+      <select name="mode" aria-label="Режим">
+        <option value="lexical" {% if mode == 'lexical' %}selected{% endif %}>За словами</option>
+        <option value="semantic" {% if mode == 'semantic' %}selected{% endif %}>За змістом</option>
+        <option value="hybrid" {% if mode == 'hybrid' %}selected{% endif %}>Гібридний</option>
+      </select>
+      {% endif %}
       <select name="scorer" aria-label="Ранжування">
         <option value="bm25" {% if scorer != 'tfidf' %}selected{% endif %}>BM25</option>
         <option value="tfidf" {% if scorer == 'tfidf' %}selected{% endif %}>TF-IDF</option>

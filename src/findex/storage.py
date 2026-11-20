@@ -27,7 +27,9 @@ from array import array
 from pathlib import Path
 from typing import Any, Literal
 
-from findex.index import DocMeta, Index, PackedPostings, Posting
+import numpy as np
+
+from findex.index import DocMeta, Index, PackedPostings
 from findex.timing import timed
 
 MAGIC = b"FIDX"
@@ -53,12 +55,12 @@ def save(index: Index, path: str | Path, fmt: Format = "binary") -> None:
         prev = 0
         raw = index.raw(term)
         if isinstance(raw, PackedPostings):  # straight from a parallel build: no need to unpack
-            for d in raw.doc_ids:
+            for d in raw.doc_ids.tolist():
                 data.append(d - prev)
                 prev = d
-            data.extend(raw.tfs)
+            data.extend(raw.tfs.tolist())
             if index.with_positions:
-                data.extend(raw.positions)
+                data.extend(raw.positions.tolist())
         else:
             for p in raw:
                 data.append(p.doc_id - prev)
@@ -103,26 +105,19 @@ def load(path: str | Path, fmt: Format | None = None) -> Index:
         if version != VERSION:
             raise IndexFormatError(f"unsupported index version {version}")
         header: dict[str, Any] = json.loads(f.read(header_len).decode("utf-8"))
-        data = array("I")
-        data.frombytes(f.read())
+        raw = f.read()
 
+    # The whole body is one u32 array; every term becomes views into it. Gaps are turned back
+    # into doc_ids with one cumsum per term instead of a Python loop over every posting (lab 8).
+    data = np.frombuffer(raw, dtype="<u4")
     with_pos = bool(header["positions"])
     docs = [DocMeta(i, str(p), str(t), int(n)) for i, (p, t, n) in enumerate(header["docs"])]
-    postings: dict[str, list[Posting]] = {}
+    postings: dict[str, PackedPostings] = {}
     off = 0
     for term, df, size in header["terms"]:
-        ids = data[off:off + df]
-        tfs = data[off + df:off + 2 * df]
-        doc_id = 0
-        plist: list[Posting] = []
-        pos_off = off + 2 * df
-        for gap, tf in zip(ids, tfs, strict=True):
-            doc_id += gap
-            if with_pos:
-                plist.append(Posting(doc_id, tf, tuple(data[pos_off:pos_off + tf])))
-                pos_off += tf
-            else:
-                plist.append(Posting(doc_id, tf))
-        postings[str(term)] = plist
+        ids = np.cumsum(data[off:off + df], dtype=np.int32)
+        tfs = data[off + df:off + 2 * df].astype(np.int32)
+        positions = data[off + 2 * df:off + int(size)] if with_pos else data[0:0]
+        postings[str(term)] = PackedPostings.from_arrays(ids, tfs, positions)
         off += int(size)
     return Index(postings, docs, with_pos)
