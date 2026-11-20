@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(case_sensitive=False, extra="ignore")
 
     index_path: Path = Path("index.bin")
+    embeddings_path: Path | None = None  # findex embed output; without it only lexical search is offered
     host: str = "127.0.0.1"
     port: int = Field(8000, ge=1, le=65535)  # Render and most platforms set PORT
     log_level: Literal["debug", "info", "warning", "error"] = "info"

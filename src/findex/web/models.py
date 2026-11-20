@@ -21,6 +21,7 @@ class SearchParams(BaseModel):
     q: str = Field(min_length=1, max_length=200, description="Query: words, \"phrases\", AND/OR/NOT, ( )")
     k: int = Field(10, ge=1, le=50, description="Results per page")
     scorer: Literal["bm25", "tfidf"] = "bm25"
+    mode: Literal["lexical", "semantic", "hybrid"] = "lexical"
     page: int = Field(1, ge=1, le=1000)
 
     @field_validator("q")
@@ -47,6 +48,7 @@ class Hit(BaseModel):
 class SearchResponse(BaseModel):
     query: str
     scorer: str
+    mode: str
     total: int = Field(description="Documents that match, on all pages")
     page: int
     pages: int
@@ -76,9 +78,12 @@ class StatsResponse(BaseModel):
     load_seconds: float
     query_cache_hits: int
     query_cache_misses: int
+    semantic_model: str | None = None
+    semantic_fragments: int | None = None
 
 
 class Health(BaseModel):
     status: Literal["ok", "loading", "failed"]
     documents: int | None = None
+    modes: list[str] | None = None
     detail: str | None = None

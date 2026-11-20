@@ -10,6 +10,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import NamedTuple
 
+import numpy as np
+import numpy.typing as npt
+
 from findex.corpus import Document, iter_documents
 from findex.timing import timed
 from findex.tokenize import tokenize
@@ -44,31 +47,44 @@ class PackedPostings:
     __slots__ = ("doc_ids", "tfs", "positions")
 
     def __init__(self) -> None:
-        self.doc_ids = array("I")
-        self.tfs = array("I")
-        self.positions = array("I")  # all positions of all postings, one after another; empty if not stored
+        # array('I') while indexing; numpy uint32/int32 views when read from a file (storage.load)
+        self.doc_ids: array[int] | npt.NDArray[np.integer] = array("I")
+        self.tfs: array[int] | npt.NDArray[np.integer] = array("I")
+        # all positions of all postings, one after another; empty if not stored
+        self.positions: array[int] | npt.NDArray[np.integer] = array("I")
+
+    @classmethod
+    def from_arrays(cls, doc_ids: npt.NDArray[np.integer], tfs: npt.NDArray[np.integer],
+                    positions: npt.NDArray[np.integer]) -> PackedPostings:
+        packed = cls()
+        packed.doc_ids, packed.tfs, packed.positions = doc_ids, tfs, positions
+        return packed
 
     def __len__(self) -> int:
         return len(self.doc_ids)
 
     def append(self, doc_id: int, positions: list[int], keep_positions: bool) -> None:
+        assert isinstance(self.doc_ids, array) and isinstance(self.tfs, array) and isinstance(self.positions, array)
         self.doc_ids.append(doc_id)
         self.tfs.append(len(positions))
         if keep_positions:
             self.positions.extend(positions)
 
     def extend(self, other: PackedPostings) -> None:
+        assert isinstance(self.doc_ids, array) and isinstance(self.tfs, array) and isinstance(self.positions, array)
         self.doc_ids.extend(other.doc_ids)
         self.tfs.extend(other.tfs)
         self.positions.extend(other.positions)
 
     def unpack(self) -> list[Posting]:
-        if not self.positions:
-            return [Posting(d, tf) for d, tf in zip(self.doc_ids, self.tfs, strict=True)]
+        ids: list[int] = self.doc_ids.tolist()
+        tfs: list[int] = self.tfs.tolist()
+        if not len(self.positions):
+            return [Posting(d, tf) for d, tf in zip(ids, tfs, strict=True)]
         out: list[Posting] = []
-        pos = self.positions.tolist()
+        pos: list[int] = self.positions.tolist()
         i = 0
-        for d, tf in zip(self.doc_ids, self.tfs, strict=True):
+        for d, tf in zip(ids, tfs, strict=True):
             out.append(Posting(d, tf, tuple(pos[i:i + tf])))
             i += tf
         return out
@@ -86,12 +102,35 @@ class Index(Mapping[str, list[Posting]]):
         self._postings: dict[str, list[Posting] | PackedPostings] = dict(postings)
         self.docs = docs
         self.with_positions = with_positions
+        self._arrays: dict[str, tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]] = {}
 
     def __getitem__(self, term: str) -> list[Posting]:
         plist = self._postings[term]
         if isinstance(plist, PackedPostings):
             plist = self._postings[term] = plist.unpack()
         return plist
+
+    def term_arrays(self, term: str) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
+        """doc_ids and tfs of a term as int32 arrays (lab 8: the form the vectorised scorers read)."""
+        cached = self._arrays.get(term)
+        if cached is not None:
+            return cached
+        raw = self._postings.get(term)
+        if raw is None:
+            ids = tfs = np.empty(0, dtype=np.int32)
+        elif isinstance(raw, PackedPostings):
+            ids = np.asarray(raw.doc_ids).astype(np.int32, copy=False)
+            tfs = np.asarray(raw.tfs).astype(np.int32, copy=False)
+        else:
+            ids = np.fromiter((p.doc_id for p in raw), dtype=np.int32, count=len(raw))
+            tfs = np.fromiter((p.tf for p in raw), dtype=np.int32, count=len(raw))
+        self._arrays[term] = (ids, tfs)
+        return ids, tfs
+
+    @cached_property
+    def doc_lengths(self) -> npt.NDArray[np.int32]:
+        """Length of every document in tokens, indexed by doc_id."""
+        return np.fromiter((d.length for d in self.docs), dtype=np.int32, count=len(self.docs))
 
     def raw(self, term: str) -> list[Posting] | PackedPostings:
         """Postings as they are stored, without unpacking (for merge and storage)."""
@@ -135,8 +174,10 @@ class Index(Mapping[str, list[Posting]]):
     def close(self) -> None:
         """Drop the data so that memory is freed even if references to the object remain."""
         self._postings = {}
+        self._arrays = {}
         self.docs = []
         self.__dict__.pop("avg_doc_length", None)
+        self.__dict__.pop("doc_lengths", None)
 
 
 def index_documents(documents: Iterable[Document], positions: bool = False,

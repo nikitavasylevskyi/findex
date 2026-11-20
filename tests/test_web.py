@@ -11,18 +11,19 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from findex import storage
+from findex.hybrid import ModeSearcher
 from findex.index import Index
 from findex.ranking import Searcher
-from findex.web.app import Engine, create_app, get_engine, get_searcher
+from findex.web.app import Engine, create_app, get_engine, get_modes
 from findex.web.settings import Settings
 
 
 @pytest.fixture
 def app(index: Index) -> FastAPI:
     app = create_app(Settings(index_path=Path("does-not-exist.bin")), load_index=False)
-    searcher = Searcher(index)
-    engine = Engine(status="ok", searcher=searcher)
-    app.dependency_overrides[get_searcher] = lambda: searcher
+    modes = ModeSearcher(Searcher(index))
+    engine = Engine(status="ok", searcher=modes.searcher, modes=modes)
+    app.dependency_overrides[get_modes] = lambda: modes
     app.dependency_overrides[get_engine] = lambda: engine
     return app
 
@@ -52,7 +53,12 @@ def test_search_pages_do_not_overlap(client: TestClient) -> None:
 def test_search_tfidf_and_boolean(client: TestClient, index: Index) -> None:
     body = client.get("/search", params={"q": "walrus AND operator", "scorer": "tfidf"}).json()
     assert [h["doc_id"] for h in body["hits"]] == [doc_id(index, "pep-0572.rst")]
-    assert body["scorer"] == "tfidf"
+    assert body["scorer"] == "tfidf" and body["mode"] == "lexical"
+
+
+def test_semantic_mode_without_embeddings_is_400(client: TestClient) -> None:
+    r = client.get("/search", params={"q": "walrus", "mode": "semantic"})
+    assert r.status_code == 400 and "embeddings" in r.json()["detail"]
 
 
 @pytest.mark.parametrize("params", [
@@ -92,7 +98,7 @@ def test_stats(client: TestClient, index: Index) -> None:
 
 
 def test_health_ok(client: TestClient) -> None:
-    assert client.get("/health").json() == {"status": "ok", "documents": 8}
+    assert client.get("/health").json() == {"status": "ok", "documents": 8, "modes": ["lexical"]}
 
 
 def test_health_is_503_while_index_is_not_loaded(app: FastAPI) -> None:
@@ -127,10 +133,10 @@ def test_lifespan_loads_index_file(tmp_path: Path, index: Index) -> None:
 
 def test_unexpected_error_is_500_without_stack(app: FastAPI, caplog: pytest.LogCaptureFixture) -> None:
     class Broken:
-        def count(self, query: str) -> int:
+        def search(self, *args: object, **kwargs: object) -> None:
             raise RuntimeError("secret internals")
 
-    app.dependency_overrides[get_searcher] = lambda: Broken()
+    app.dependency_overrides[get_modes] = lambda: Broken()
     with TestClient(app, raise_server_exceptions=False) as client:
         r = client.get("/search", params={"q": "walrus"}, headers={"x-request-id": "abc123"})
     assert r.status_code == 500

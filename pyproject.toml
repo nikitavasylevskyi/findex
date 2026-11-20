@@ -11,6 +11,8 @@ dependencies = [
     "fastapi>=0.165.0",
     "httpx>=0.28.1",
     "jinja2>=3.1.6",
+    "model2vec>=0.10.0",
+    "numpy>=2.5.5",
     "pydantic-settings>=2.16.3",
     "rich>=15.0.0",
     "selectolax>=1.0.2",
@@ -28,10 +30,13 @@ bench = [
 ]
 dev = [
     "hypothesis>=6.170.16",
+    "py-spy>=0.4.4",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
+    "pytest-benchmark>=5.3.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.6",
+    "scalene>=2.4.0",
 ]
 
 [project.scripts]
@@ -51,7 +56,7 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --benchmark-disable"
 filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
 markers = ["slow: takes longer than a second"]
 

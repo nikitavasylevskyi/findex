@@ -18,6 +18,7 @@ from rich.table import Table
 
 from findex import __version__, boolean, storage
 from findex.corpus import display_path, is_jsonl, iter_paths
+from findex.hybrid import Mode
 from findex.index import build_index
 from findex.parallel import ExecutorKind, build_parallel
 from findex.query import QuerySyntaxError
@@ -154,6 +155,9 @@ def search(
     as_json: Annotated[bool, typer.Option("--json", help="Print results as JSON to stdout")] = False,
     boolean_only: Annotated[bool, typer.Option("--boolean", help="Unranked Boolean search")] = False,
     engine: Annotated[Engine, typer.Option("--engine")] = "merge",
+    mode: Annotated[Mode, typer.Option("--mode", "-m", help="lexical, semantic or hybrid")] = "lexical",
+    embeddings: Annotated[Path, typer.Option("--embeddings", "-e", help="Matrix from findex embed")] = Path(
+        "embeddings.npy"),
 ) -> None:
     """Search the index and show ranked results with snippets."""
     try:
@@ -169,8 +173,16 @@ def search(
                         out.print(f"{r['doc_id']:5}  {r['title']}", highlight=False)
                     err.print(f"{len(hits)} documents")
                 return
-            results = Searcher(index).search(query, SCORERS[scorer], k)
-    except (FileNotFoundError, IndexFormatError, QuerySyntaxError) as e:
+            if mode == "lexical":
+                results = Searcher(index).search(query, SCORERS[scorer], k)
+            else:
+                from findex.hybrid import ModeSearcher
+                from findex.semantic import Model2VecEncoder, SemanticIndex
+
+                semantic = SemanticIndex.load(embeddings)
+                searcher = ModeSearcher(Searcher(index), semantic, Model2VecEncoder(semantic.model))
+                results = searcher.search(query, mode, SCORERS[scorer], k).results
+    except (FileNotFoundError, IndexFormatError, QuerySyntaxError, ValueError) as e:
         raise fail(str(e)) from None
 
     if as_json:
@@ -179,7 +191,7 @@ def search(
     if not results:
         err.print("no results")
         return
-    table = Table(title=f"{query}  [{scorer}]", show_lines=True)
+    table = Table(title=f"{query}  [{scorer if mode == 'lexical' else mode}]", show_lines=True)
     table.add_column("#", justify="right")
     table.add_column("score", justify="right")
     table.add_column("document", style="bold", max_width=34)
@@ -190,6 +202,30 @@ def search(
         snippet = "".join(f"[yellow bold]{p}[/]" if i % 2 else p for i, p in enumerate(parts))
         table.add_row(str(rank), f"{r.score:.2f}", r.title, snippet)
     out.print(table)
+
+
+@app.command()
+def embed(
+    corpus: Annotated[Path, typer.Argument(help="The same corpus the index was built from")],
+    out_path: Annotated[Path, typer.Option("--out", "-o", help="Matrix of fragment vectors")] = Path(
+        "embeddings.npy"),
+    model: Annotated[str, typer.Option("--model", help="model2vec model on Hugging Face")] = "minishlab/potion-base-8M",
+) -> None:
+    """Split documents into fragments, embed them and save the normalised matrix (.npy)."""
+    from findex.semantic import Model2VecEncoder, embed_corpus
+
+    if not corpus.exists():
+        raise fail(f"corpus not found: {corpus}")
+    t0 = time.perf_counter()
+    with Progress(TextColumn("[bold]embedding"), BarColumn(), MofNCompleteColumn(), TimeElapsedColumn(),
+                  console=err, transient=True) as progress:
+        total = None if corpus.is_file() else sum(1 for _ in iter_paths(corpus))
+        task = progress.add_task("embed", total=total)
+        semantic = embed_corpus(corpus, Model2VecEncoder(model), on_document=lambda _: progress.advance(task))
+    semantic.save(out_path)
+    rows, dim = semantic.vectors.shape
+    err.print(f"{semantic.num_docs} documents, {rows} fragments x {dim} -> {out_path.with_suffix('.npy')} "
+              f"({semantic.vectors.nbytes / 2**20:.1f} MiB) in {time.perf_counter() - t0:.1f} s")
 
 
 @app.command()
